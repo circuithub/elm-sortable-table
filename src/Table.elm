@@ -57,7 +57,7 @@ import Html exposing (Html, Attribute)
 import Html.Attributes as Attr
 import Html.Events as E
 import Html.Keyed as Keyed
-import Html.Lazy exposing (lazy2, lazy3)
+import Html.Lazy exposing (lazy)
 import Json.Decode as Json
 
 
@@ -185,7 +185,7 @@ type alias Customizations data msg =
   , thead : List (String, Status, Attribute msg) -> HtmlDetails msg
   , tfoot : Maybe (HtmlDetails msg)
   , tbodyAttrs : List (Attribute msg)
-  , rowAttrs : data -> List (Attribute msg)
+  , rowAttrs : Int -> data -> List (Attribute msg)
   }
 
 
@@ -253,8 +253,8 @@ lightGrey symbol =
   Html.span [ Attr.style [("color", "#ccc")] ] [ Html.text (" " ++ symbol) ]
 
 
-simpleRowAttrs : data -> List (Attribute msg)
-simpleRowAttrs _ =
+simpleRowAttrs : Int -> data -> List (Attribute msg)
+simpleRowAttrs _ _ =
   []
 
 
@@ -429,7 +429,7 @@ view (Config { toId, toMsg, columns, customizations }) state data =
 
     tbody =
       Keyed.node "tbody" customizations.tbodyAttrs <|
-        List.map (viewRow toId columns customizations.rowAttrs) sortedData
+        List.indexedMap (viewRow toId columns customizations.rowAttrs) sortedData
 
     withFoot =
       case customizations.tfoot of
@@ -479,16 +479,19 @@ onClick name isReversed toMsg =
     Json.map2 State (Json.succeed name) (Json.succeed isReversed)
 
 
-viewRow : (data -> String) -> List (ColumnData data msg) -> (data -> List (Attribute msg)) -> data -> ( String, Html msg )
-viewRow toId columns toRowAttrs data =
-  ( toId data
-  , lazy3 viewRowHelp columns toRowAttrs data
-  )
+viewRow : (data -> String) -> List (ColumnData data msg) -> (Int -> data -> List (Attribute msg)) -> Int -> data -> ( String, Html msg )
+viewRow toId columns toRowAttrs sortIndex data =
+  let
+    lazy4 f a b c d = lazy (\(w,x,y,z) -> f w x y z) (a,b,c,d)
+  in
+    ( toId data
+    , lazy4 viewRowHelp columns toRowAttrs sortIndex data
+    )
 
 
-viewRowHelp : List (ColumnData data msg) -> (data -> List (Attribute msg)) -> data -> Html msg
-viewRowHelp columns toRowAttrs data =
-  Html.tr (toRowAttrs data) (List.map (viewCell data) columns)
+viewRowHelp : List (ColumnData data msg) -> (Int -> data -> List (Attribute msg)) -> Int -> data -> Html msg
+viewRowHelp columns toRowAttrs sortIndex data =
+  Html.tr (toRowAttrs sortIndex data) (List.map (viewCell data) columns)
 
 
 viewCell : data -> ColumnData data msg -> Html msg
