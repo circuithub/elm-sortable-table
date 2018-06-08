@@ -1,5 +1,5 @@
 module Table exposing
-  ( view
+  ( view, sortedView
   , config, stringColumn, intColumn, floatColumn
   , State, initialSort
   , Column, customColumn, veryCustomColumn
@@ -23,7 +23,7 @@ I recommend checking out the [examples][] to get a feel for how it works.
 
 # View
 
-@docs view
+@docs view, sortedView
 
 # Configuration
 
@@ -405,6 +405,13 @@ veryCustomColumn =
 
 
 -- VIEW
+
+{-| Take the list of data and prepare it for display in the table,
+based on the current sorting specification.
+-}
+sortedView : Config data msg -> State -> List data -> List data
+sortedView (Config { columns }) state data =
+    sort state columns data
 
 
 {-| Take a list of data and turn it into a table. The `Config` argument is the
